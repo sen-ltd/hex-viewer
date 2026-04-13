@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hex Viewer</title>
+  <meta name="description" content="Binary file hex viewer with ASCII display, magic number detection, search, and editing." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- Top bar -->
+    <header class="top-bar">
+      <h1 data-i18n="title">Hex Viewer</h1>
+      <span class="subtitle" data-i18n="subtitle">Binary file inspector</span>
+      <div class="spacer"></div>
+      <button class="btn small" id="lang-btn" title="Switch language">JA</button>
+    </header>
+
+    <div class="main">
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+
+        <!-- File info -->
+        <div class="sidebar-section">
+          <h3 data-i18n="fileInfo">File Info</h3>
+          <div class="info-row">
+            <span class="label" data-i18n="fileName">Name</span>
+            <span class="value" id="info-name">—</span>
+          </div>
+          <div class="info-row">
+            <span class="label" data-i18n="fileSize">Size</span>
+            <span class="value" id="info-size">—</span>
+          </div>
+          <div class="info-row">
+            <span class="label" data-i18n="fileType">Type</span>
+            <span class="value" id="info-type">—</span>
+          </div>
+          <div class="info-row">
+            <span class="label" data-i18n="magicNumber">Magic</span>
+            <span class="value" id="info-magic">—</span>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="sidebar-section">
+          <h3 data-i18n="search">Search</h3>
+          <div class="search-row">
+            <input
+              type="text"
+              class="search-input"
+              id="search-input"
+              data-i18n-placeholder="searchPlaceholder"
+              placeholder="Hex (e.g. FF D8) or ASCII text"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="flex-row" style="margin-bottom:6px">
+            <div class="btn-group">
+              <button class="btn small active" id="search-mode-hex" data-i18n="searchHex">Hex</button>
+              <button class="btn small" id="search-mode-ascii" data-i18n="searchAscii">ASCII</button>
+            </div>
+          </div>
+          <div class="search-nav">
+            <button class="btn small" id="search-prev" data-i18n="prevMatch">Prev</button>
+            <button class="btn small" id="search-next" data-i18n="nextMatch">Next</button>
+            <span class="search-count" id="search-count"></span>
+          </div>
+        </div>
+
+        <!-- Selection -->
+        <div class="sidebar-section">
+          <h3 data-i18n="selection">Selection</h3>
+          <div class="sel-info" id="sel-info"></div>
+          <div class="sel-actions">
+            <button class="btn small" id="copy-hex" data-i18n="copyHex">Copy Hex</button>
+            <button class="btn small" id="copy-ascii" data-i18n="copyAscii">Copy ASCII</button>
+          </div>
+        </div>
+
+        <!-- Export / Edit -->
+        <div class="sidebar-section">
+          <div class="flex-row" style="flex-wrap:wrap; gap:4px">
+            <button class="btn small" id="export-btn" data-i18n="export">Export Dump</button>
+            <button class="btn small" id="download-btn" data-i18n="download">Download Modified</button>
+          </div>
+          <p style="font-size:11px; color:var(--text-muted); margin-top:6px">
+            Double-click a byte to edit it.
+          </p>
+        </div>
+
+        <!-- Go to offset -->
+        <div class="sidebar-section">
+          <h3 data-i18n="gotoOffset">Go to offset</h3>
+          <div class="flex-row">
+            <input
+              type="text"
+              class="input-sm-text"
+              id="goto-input"
+              data-i18n-placeholder="gotoPlaceholder"
+              placeholder="Hex offset (e.g. 1A00)"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="btn small" id="goto-btn" data-i18n="goto">Go</button>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="sidebar-section">
+          <h3 data-i18n="controls">Controls</h3>
+          <div class="control-row">
+            <label data-i18n="width">Columns</label>
+            <select class="input-sm" id="width-select">
+              <option value="8">8</option>
+              <option value="16" selected>16</option>
+              <option value="32">32</option>
+            </select>
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- Main content area -->
+      <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative;">
+
+        <!-- Drop zone -->
+        <div id="dropzone">
+          <div class="drop-icon">🔬</div>
+          <div class="drop-label" data-i18n="dropzone">Drop a file here or click to select</div>
+          <div class="drop-hint" data-i18n="dropzoneHint">Any binary or text file</div>
+          <input type="file" id="file-input" style="display:none" />
+        </div>
+
+        <!-- Viewer panel -->
+        <div id="viewer-panel" class="hidden">
+
+          <!-- Table header (sticky) -->
+          <table class="hex-table hex-table-header" style="width:100%">
+            <thead>
+              <tr>
+                <th class="col-offset" data-i18n="offset">Offset</th>
+                <th class="col-hex" data-i18n="hex">Hex</th>
+                <th class="col-ascii" data-i18n="ascii">ASCII</th>
+              </tr>
+            </thead>
+          </table>
+
+          <!-- Virtual scroll viewport -->
+          <div id="hex-viewport" style="flex:1; overflow-y:auto; overflow-x:auto; position:relative;">
+            <!-- Spacer for total scroll height -->
+            <div id="scroll-spacer"></div>
+            <!-- Hex table (absolutely positioned, only visible rows) -->
+            <div id="hex-table-wrap" style="position:absolute; top:0; left:0; width:100%;">
+              <table class="hex-table" style="width:100%">
+                <tbody id="hex-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit byte modal -->
+  <div class="modal-overlay hidden" id="edit-modal">
+    <div class="modal-box">
+      <h2 data-i18n="editByte">Edit Byte</h2>
+      <div class="offset-label" id="edit-offset-label">00000000</div>
+      <input
+        type="text"
+        id="edit-input"
+        maxlength="2"
+        autocomplete="off"
+        spellcheck="false"
+        data-i18n-placeholder="editByteLabel"
+        placeholder="New value (hex)"
+      />
+      <div class="modal-actions">
+        <button class="btn" id="edit-cancel" data-i18n="editCancel">Cancel</button>
+        <button class="btn accent" id="edit-apply" data-i18n="editApply">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
