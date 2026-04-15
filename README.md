@@ -71,3 +71,10 @@ PNG, JPEG, GIF87a, GIF89a, WebP, BMP, ZIP, PDF, GZIP, WAV, MP3 (ID3v2 & sync), O
 ## License
 
 MIT © 2026 SEN LLC (SEN 合同会社)
+
+<!-- sen-publish:links -->
+## Links
+
+- 🌐 Demo: https://sen.ltd/portfolio/hex-viewer/
+- 📝 dev.to: https://dev.to/sendotltd/a-browser-hex-viewer-with-magic-number-detection-and-virtual-scrolling-5fec
+<!-- /sen-publish:links -->
